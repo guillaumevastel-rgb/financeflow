@@ -1,0 +1,209 @@
+
+/* FinanceFlow – Design Moderne + Mobile (Option D) */
+
+:root {
+  --bg: #f5f7fa;
+  --text: #1a1a1a;
+  --text-light: #666;
+  --primary: #4361ee;
+  --primary-light: #5a78ff;
+  --card: #ffffff;
+  --radius: 18px;
+  --shadow: 0 4px 18px rgba(0,0,0,0.08);
+  --transition: 0.25s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1117;
+    --text: #f0f0f0;
+    --text-light: #aaa;
+    --card: #1a1d24;
+    --shadow: 0 4px 22px rgba(0,0,0,0.3);
+  }
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  font-family: 'Segoe UI', Roboto, Arial;
+  color: var(--text);
+}
+
+h1, h2, h3 { margin: 0; }
+
+/* HEADER */
+header {
+  padding: 25px;
+  text-align: center;
+  background: var(--primary);
+  color: white;
+  border-bottom-left-radius: 30px;
+  border-bottom-right-radius: 30px;
+  box-shadow: var(--shadow);
+}
+
+/* CONTAINER */
+.container {
+  padding: 20px;
+  max-width: 700px;
+  margin: auto;
+}
+
+/* CARD */
+.card {
+  background: var(--card);
+  padding: 20px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  transition: var(--transition);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+/* INPUTS */
+input, select, textarea {
+  width: 100%;
+  padding: 14px;
+  margin-top: 8px;
+  border-radius: var(--radius);
+  border: 1px solid #ddd;
+  background: #fafafa;
+  font-size: 15px;
+  transition: var(--transition);
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(67,97,238,0.15);
+  outline: none;
+}
+
+/* BUTTONS */
+.btn {
+  width: 100%;
+  padding: 15px;
+  background: var(--primary);
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+
+.btn:hover {
+  background: var(--primary-light);
+}
+
+.btn-secondary {
+  background: #e3e6ef;
+  color: var(--primary);
+}
+
+/* BADGES */
+.badge {
+  display: inline-block;
+  background: #eef2ff;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-right: 5px;
+  color: var(--primary);
+}
+
+/* RECEIPT PREVIEW */
+.receipt-preview {
+  width: 100%;
+  height: 160px;
+  border-radius: var(--radius);
+  object-fit: cover;
+  border: 1px solid #ddd;
+  margin-top: 10px;
+}
+
+/* PROGRESS BAR */
+.progress-bg {
+  width: 100%;
+  height: 10px;
+  border-radius: 10px;
+  background: #e4e4e4;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progress-bar {
+  background: var(--primary);
+  width: 0%;
+  height: 100%;
+  transition: width .3s;
+}
+
+/* ANIMATIONS */
+.fade-in {
+  animation: fadeIn .35s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+  .container { padding: 10px; }
+  h1 { font-size: 1.6em; }
+}
+
+/* === UX FINAL PASS: modal, badges, focus, theme toggle === */
+:root.theme-dark { --bg:#0f1117; --text:#f0f0f0; --text-light:#aaa; --card:#1a1d24; }
+
+/* Focus visible for accessibility */
+:focus-visible { outline: 3px solid rgba(67,97,238,.45); outline-offset: 2px; border-radius: 8px; }
+
+/* Badges summary */
+.badge-stat { display:inline-flex; align-items:center; gap:8px; background:#eef2ff; color:#4361ee; padding:8px 12px; border-radius:14px; font-weight:600; margin-right:8px; }
+.badge-stat .v { font-weight:800; color:#1a1a1a; }
+
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:10000}
+.modal{background:var(--card);width:min(560px,92vw);border-radius:16px;box-shadow:var(--shadow);padding:18px}
+.modal header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.modal footer{display:flex;gap:12px;justify-content:flex-end;margin-top:12px}
+.modal.show {animation: fadeIn .25s ease;}
+
+/* Inputs in modal */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row > div{display:flex;flex-direction:column}
+.form-error{color:#e63946;font-size:12px;height:14px;margin-top:4px}
+
+/* Theme toggle */
+.theme-toggle{background:#e3e6ef;color:#4361ee;border:none;border-radius:12px;padding:8px 12px;cursor:pointer;font-weight:700}
+
+/* Lightbox image preview */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:11000}
+.lightbox img{max-width:94vw;max-height:90vh;border-radius:10px}
+
+/* === UX FINAL PASS ADDITIONS === */
+.fab{position:fixed;right:20px;bottom:20px;background:#4361ee;color:#fff;border:none;border-radius:50%;width:56px;height:56px;font-size:26px;box-shadow:0 8px 24px rgba(67,97,238,.3);cursor:pointer}
+.fab:hover{background:#5a78ff}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:10000}
+.modal{background:var(--card);border-radius:18px;box-shadow:var(--shadow);max-width:520px;width:90%;padding:18px}
+.modal header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.modal .close{background:transparent;border:none;font-size:22px;cursor:pointer}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .full{grid-column:1/-1}
+.input-hint{font-size:12px;color:var(--text-light)}
+img.receipt-preview.big{height:220px;object-fit:contain;background:#f7f7f9}
+.empty{padding:22px;text-align:center;color:var(--text-light)}
+.button-row{display:flex;gap:10px}
+.btn-danger{background:#e63946;color:#fff}
+.btn-ghost{background:transparent;color:var(--primary);border:1px solid #e0e0f0}
+.header-stats .kpi{display:inline-block;background:#fff;border-radius:14px;padding:10px 14px;margin:8px 6px;box-shadow:var(--shadow)}
+.header-stats .kpi b{color:#4361ee}
