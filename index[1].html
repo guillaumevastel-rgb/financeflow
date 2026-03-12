@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanceFlow — Gestion de Frais</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/compressorjs/1.2.1/compressor.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-light: #4895ef;
+            --success: #4cc9f0;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #2b2d42;
+            --text-light: #8d99ae;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background: var(--bg); 
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .header-stats { 
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            color: white; 
+            padding: 30px 20px;
+            text-align: center;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            box-shadow: 0 10px 20px rgba(67, 97, 238, 0.2);
+            margin-bottom: 25px;
+        }
+
+        .header-stats small { font-weight: 300; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+        .header-stats h2 { margin: 10px 0; font-size: 2.2em; font-weight: 700; }
+
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 10px; 
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        .stat-item span { display: block; font-size: 0.8em; opacity: 0.8; }
+        .stat-item b { font-size: 1.1em; }
+
+        .container { padding: 0 15px 40px 15px; max-width: 500px; margin: auto; }
+
+        .card { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 20px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+        }
+
+        .search-bar { 
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        label { font-size: 0.85em; color: var(--text-light); font-weight: 600; margin-left: 5px; }
+
+        input, select { 
+            width: 100%; 
+            padding: 12px 15px; 
+            margin: 8px 0 15px 0; 
+            border-radius: 12px; 
+            border: 1px solid #edf2f7; 
+            background: #fdfdfd;
+            box-sizing: border-box; 
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus { border-color: var(--primary-light); outline: none; box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1); }
+
+        .row { display: flex; gap: 10px; align-items: flex-start; }
+        .row > div { flex: 1; }
+
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            border-radius: 15px; 
+            border: none; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: transform 0.2s, opacity 0.2s;
+            font-size: 16px;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        .btn-submit { background: var(--primary); color: white; margin-top: 10px; box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3); }
+        .btn-add-tva { background: #f0f2f5; color: var(--primary); font-size: 0.9em; margin-bottom: 15px; }
+        .btn-export { background: #2b2d42; color: white; margin-bottom: 30px; }
+
+        /* OCR Progress */
+        #ocr-status { display: none; background: #f0f7ff; padding: 15px; border-radius: 15px; margin-bottom: 15px; }
+        .progress-bg { background: #e2e8f0; border-radius: 10px; height: 8px; margin-top: 8px; overflow: hidden; }
+        #progress-bar { background: var(--primary); width: 0%; height: 100%; transition: width 0.3s; }
+
+        /* Liste des dépenses */
+        .depense-card { border-left: 6px solid var(--primary); position: relative; }
+        .depense-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .depense-date { color: var(--text-light); font-size: 0.9em; }
+        .depense-amount { font-size: 1.2em; font-weight: 700; color: var(--primary); }
+        .tva-badges { margin: 8px 0; }
+        .badge { background: #f1f5f9; color: #475569; padding: 4px 8px; border-radius: 6px; font-size: 0.75em; margin-right: 5px; font-weight: 600; }
+        .note { font-style: italic; font-size: 0.9em; color: var(--text-light); }
+        .receipt-preview { width: 100%; height: 150px; object-fit: cover; border-radius: 12px; margin-top: 12px; border: 1px solid #eee; }
+        .btn-delete { background: #fff1f1; color: #e63946; padding: 8px; font-size: 0.8em; margin-top: 10px; }
+
+        .tva-entry-row { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 8px; margin-bottom: 8px; }
+        .remove-tva { background: #fee2e2; color: #ef4444; padding: 0; display: flex; align-items: center; justify-content: center; height: 45px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-stats">
+        <small>Total Dépenses TTC</small>
+        <h2 id="totalTTC">0.00 €</h2>
+        <div class="stats-grid">
+            <div class="stat-item"><span>TVA 20%</span><b id="stat-tva20">0</b>€</div>
+            <div class="stat-item"><span>TVA 10%</span><b id="stat-tva10">0</b>€</div>
+            <div class="stat-item"><span>TVA 5.5%</span><b id="stat-tva5">0</b>€</div>
+        </div>
+        <div style="margin-top:15px; font-size: 0.9em;">Total TVA récupérable : <span id="totalTVA" style="font-weight: 700;">0.00</span> €</div>
+    </div>
+
+    <div class="container">
+        <input type="text" id="recherche" class="search-bar" placeholder="🔍 Rechercher une dépense..." oninput="render()">
+
+        <form class="card" id="f">
+            <div id="ocr-status">
+                <div style="display: flex; justify-content: space-between;">
+                    <small id="ocr-text" style="color: var(--primary); font-weight: 600;">Analyse du ticket...</small>
+                    <small id="ocr-perc">0%</small>
+                </div>
+                <div class="progress-bg"><div id="progress-bar"></div></div>
+            </div>
+
+            <label>Date de la dépense</label>
+            <input type="date" id="d" required>
+
+            <label>Montant total TTC (€)</label>
+            <input type="number" id="m" placeholder="0.00" step="0.01" required>
+            
+            <div id="tva-rows-container">
+                <label>Ventilation de la TVA</label>
+                <div class="tva-entry-row tva-entry">
+                    <input type="number" class="tva-amount" placeholder="Montant TVA" step="0.01" required>
+                    <select class="tva-rate">
+                        <option value="20">Taux 20%</option>
+                        <option value="10">Taux 10%</option>
+                        <option value="5.5">Taux 5.5%</option>
+                        <option value="2.1">Taux 2.1%</option>
+                    </select>
+                    <div></div> </div>
+            </div>
+            <button type="button" class="btn-add-tva" onclick="addTvaRow()">+ Ajouter un autre taux de TVA</button>
+
+            <div class="row">
+                <div>
+                    <label>Catégorie</label>
+                    <select id="c">
+                        <option>Repas</option><option>Transport</option><option>Hôtel</option><option>Fournitures</option><option>Autre</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Note / Client</label>
+                    <input type="text" id="n" placeholder="Ex: Client X">
+                </div>
+            </div>
+            
+            <label>Justificatif (Photo)</label>
+            <input type="file" id="i" accept="image/*" capture="environment" required>
+            
+            <button type="submit" id="btn-submit" class="btn-submit">Enregistrer la dépense</button>
+        </form>
+
+        <button class="btn-export" onclick="exportCSV()">📥 Exporter mes frais (CSV)</button>
+
+        <div id="l"></div>
+    </div>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('frais_v5')) || [];
+
+        // --- CALCUL AUTO TVA (Suggère 20% sur le TTC saisi) ---
+        document.getElementById('m').addEventListener('input', (e) => {
+            const ttc = parseFloat(e.target.value);
+            const tvaEntries = document.querySelectorAll('.tva-entry');
+            if (tvaEntries.length === 1 && !isNaN(ttc)) {
+                const tvaField = tvaEntries[0].querySelector('.tva-amount');
+                if (!tvaField.value || tvaField.dataset.auto === "true") {
+                    tvaField.value = (ttc - (ttc / 1.20)).toFixed(2);
+                    tvaField.dataset.auto = "true";
+                }
+            }
+        });
+
+        // --- OCR : LECTURE DATE + MONTANT ---
+        document.getElementById('i').onchange = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const statusDiv = document.getElementById('ocr-status');
+            const progressBar = document.getElementById('progress-bar');
+            const statusText = document.getElementById('ocr-text');
+            const statusPerc = document.getElementById('ocr-perc');
+            const submitBtn = document.getElementById('btn-submit');
+
+            statusDiv.style.display = 'block';
+            submitBtn.disabled = true;
+
+            Tesseract.recognize(file, 'fra', { 
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        const progress = Math.round(m.progress * 100);
+                        progressBar.style.width = progress + '%';
+                        statusPerc.innerText = progress + '%';
+                    }
+                }
+            }).then(({ data: { text } }) => {
+                // 1. Détection Montant
+                const moneyRegex = /(?:total|ttc|payer|net)[^\d]*(\d+[,.]\d{2})/gi;
+                const moneyMatches = [...text.matchAll(moneyRegex)];
+                if (moneyMatches.length > 0) {
+                    const foundVal = moneyMatches[moneyMatches.length - 1][1].replace(',', '.');
+                    document.getElementById('m').value = foundVal;
+                    document.getElementById('m').dispatchEvent(new Event('input'));
+                }
+
+                // 2. Détection Date
+                const dateRegex = /(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{2,4})/;
+                const dateMatch = text.match(dateRegex);
+                if (dateMatch) {
+                    let day = dateMatch[1], month = dateMatch[2], year = dateMatch[3];
+                    if (year.length === 2) year = "20" + year;
+                    document.getElementById('d').value = `${year}-${month}-${day}`;
+                }
+
+                statusText.innerText = "Analyse terminée !";
+                setTimeout(() => { statusDiv.style.display = 'none'; }, 2000);
+                submitBtn.disabled = false;
+            }).catch(() => {
+                statusText.innerText = "Erreur de lecture.";
+                submitBtn.disabled = false;
+            });
+        };
+
+        function addTvaRow() {
+            const container = document.getElementById('tva-rows-container');
+            const div = document.createElement('div');
+            div.className = 'tva-entry-row tva-entry';
+            div.innerHTML = `
+                <input type="number" class="tva-amount" placeholder="Montant TVA" step="0.01" required>
+                <select class="tva-rate">
+                    <option value="20">Taux 20%</option><option value="10">Taux 10%</option><option value="5.5">Taux 5.5%</option><option value="2.1">Taux 2.1%</option>
+                </select>
+                <button type="button" class="remove-tva" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(div);
+        }
+
+        const render = () => {
+            const query = document.getElementById('recherche').value.toLowerCase();
+            let totalTtc = 0, totalTvaGlobal = 0;
+            let statsTva = { "20": 0, "10": 0, "5.5": 0 };
+            
+            const listContainer = document.getElementById('l');
+            listContainer.innerHTML = '';
+
+            db.sort((a,b)=>b.dt.localeCompare(a.dt)).forEach(x => {
+                if (x.ct.toLowerCase().includes(query) || x.nt.toLowerCase().includes(query)) {
+                    totalTtc += x.mt;
+                    let tvaHtml = '';
+                    x.tvas.forEach(t => {
+                        if(statsTva[t.rate] !== undefined) statsTva[t.rate] += t.amt;
+                        totalTvaGlobal += t.amt;
+                        tvaHtml += `<span class="badge">${t.amt.toFixed(2)}€ (${t.rate}%)</span>`;
+                    });
+
+                    const e = document.createElement('div'); 
+                    e.className = 'card depense-card';
+                    e.innerHTML = `
+                        <div class="depense-header">
+                            <div>
+                                <div class="depense-date">${new Date(x.dt).toLocaleDateString('fr-FR')}</div>
+                                <b>${x.ct}</b>
+                            </div>
+                            <div class="depense-amount">${x.mt.toFixed(2)} €</div>
+                        </div>
+                        <div class="tva-badges">${tvaHtml}</div>
+                        ${x.nt ? `<div class="note">"${x.nt}"</div>` : ''}
+                        <img src="${x.p}" class="receipt-preview">
+                        <button class="btn-delete" onclick="del(${x.id})">Supprimer la dépense</button>
+                    `;
+                    listContainer.appendChild(e);
+                }
+            });
+
+            document.getElementById('totalTTC').innerText = totalTtc.toFixed(2) + ' €';
+            document.getElementById('stat-tva20').innerText = statsTva["20"].toFixed(2);
+            document.getElementById('stat-tva10').innerText = statsTva["10"].toFixed(2);
+            document.getElementById('stat-tva5').innerText = statsTva["5.5"].toFixed(2);
+            document.getElementById('totalTVA').innerText = totalTvaGlobal.toFixed(2);
+        };
+
+        const del = (id) => { if(confirm('Supprimer cette dépense ?')){ db = db.filter(x=>x.id!==id); localStorage.setItem('frais_v5', JSON.stringify(db)); render(); }};
+
+        document.getElementById('f').onsubmit = (e) => {
+            e.preventDefault();
+            const tvaEntries = [];
+            document.querySelectorAll('.tva-entry').forEach(row => {
+                tvaEntries.push({
+                    amt: parseFloat(row.querySelector('.tva-amount').value),
+                    rate: row.querySelector('.tva-rate').value
+                });
+            });
+
+            const file = document.getElementById('i').files[0];
+            new Compressor(file, { quality: 0.5, maxWidth: 800, success(res) {
+                const r = new FileReader(); r.readAsDataURL(res);
+                r.onload = () => {
+                    db.push({
+                        id: Date.now(), dt: document.getElementById('d').value, 
+                        mt: parseFloat(document.getElementById('m').value), 
+                        tvas: tvaEntries, ct: document.getElementById('c').value, 
+                        nt: document.getElementById('n').value, p: r.result
+                    });
+                    localStorage.setItem('frais_v5', JSON.stringify(db));
+                    document.getElementById('f').reset();
+                    render();
+                };
+            }});
+        };
+
+        function exportCSV() {
+            let csv = 'Date;Montant TTC;TVA Totale;Details TVA;Categorie;Note\n';
+            db.forEach(x => { 
+                let tvaTotal = x.tvas.reduce((sum, t) => sum + t.amt, 0);
+                let tvaDetail = x.tvas.map(t => `${t.amt}€(${t.rate}%)`).join('|');
+                csv += `${x.dt};${x.mt.toFixed(2)};${tvaTotal.toFixed(2)};${tvaDetail};${x.ct};"${x.nt}"\n`; 
+            });
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "export_frais_premium.csv";
+            link.click();
+        }
+
+        render();
+    </script>
+</body>
+</html>
