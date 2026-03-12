@@ -1,10 +1,11 @@
 // FinanceFlow – Moteur principal
-// Sections : Gestion des données, OCR, Interface, Caméra
+// Ce fichier gère : le stockage local, l'OCR (lecture de ticket) et l'affichage des cartes.
 
-// --- GESTION DES DONNÉES ---
+// --- 1. GESTION DES DONNÉES ---
 let DB = [];
-const DB_KEY = 'financeflow_db_v1';
+const DB_KEY = 'frais_v5'; // Utilisation de la même clé que votre fichier HTML pour la compatibilité.
 
+// Charge les données au démarrage
 function dbLoad() {
 try {
 DB = JSON.parse(localStorage.getItem(DB_KEY)) || [];
@@ -13,139 +14,102 @@ DB = [];
 }
 }
 
+// Sauvegarde et rafraîchit l'interface
 function dbSave() {
 localStorage.setItem(DB_KEY, JSON.stringify(DB));
-}
-
-function addExpense(obj) {
-const newExpense = {
-id: Date.now(),
-date: obj.date || new Date().toISOString().split('T')[0],
-magasin: obj.magasin || 'Inconnu',
-amount: parseFloat(obj.total) || 0,
-paiement: obj.paiement || 'N/A',
-category: 'Général'
-};
-DB.push(newExpense);
-dbSave();
 renderUI();
 }
 
-function deleteExpense(id) {
-DB = DB.filter(x => x.id !== id);
-dbSave();
-renderUI();
-}
-
-// --- MODULE OCR ---
+// --- 2. MODULE OCR (Lecture du ticket) ---
 async function runOCR(file) {
-const btnApply = document.getElementById('ocr-apply');
-if(btnApply) {
-btnApply.textContent = "Analyse en cours...";
-btnApply.disabled = true;
-}
+const progressBar = document.getElementById('progress-bar');
+const statusDiv = document.getElementById('ocr-status');
+const statusPerc = document.getElementById('ocr-perc');
 
-// Utilise Tesseract.js (doit être chargé dans index.html)
+if (statusDiv) statusDiv.style.display = 'block';
+
+// Utilisation de Tesseract.js pour extraire le texte de l'image.
 return Tesseract.recognize(file, 'fra', {
-logger: m => console.log(m)
+logger: m => {
+if (m.status === 'recognizing text' && progressBar) {
+const progress = Math.round(m.progress * 100);
+progressBar.style.width = progress + '%';
+statusPerc.innerText = progress + '%';
+}
+}
 }).then(({ data: { text } }) => {
 const cleaned = text.replace(/\s+/g, ' ').trim();
-const out = { total: null, date: null, magasin: null, paiement: null };
+const result = { total: null, date: null };
 
 });
 }
 
-// --- INTERFACE UTILISATEUR (UI) ---
+// --- 3. RENDU DE L'INTERFACE (Cartes de dépenses) ---
+function renderUI() {
+const listContainer = document.getElementById('l');
+const searchInput = document.getElementById('recherche');
+const query = searchInput ? searchInput.value.toLowerCase() : "";
+
+if (!listContainer) return;
+
+let totalTtc = 0, totalTvaGlobal = 0;
+let statsTva = { "20": 0, "10": 0, "5.5": 0, "2.1": 0 };
+
+listContainer.innerHTML = '';
+
+// Filtre et tri par date.
+const filtered = DB.filter(x =>
+(x.ct || '').toLowerCase().includes(query) ||
+(x.nt || '').toLowerCase().includes(query)
+).sort((a, b) => b.dt.localeCompare(a.dt));
+
+filtered.forEach(x => {
+totalTtc += x.mt;
+let tvaHtml = '';
+
+});
+
+// Mise à jour des totaux dans le header.
+if (document.getElementById('totalTTC')) document.getElementById('totalTTC').innerText = totalTtc.toFixed(2) + ' €';
+if (document.getElementById('stat-tva20')) document.getElementById('stat-tva20').innerText = statsTva["20"].toFixed(2);
+if (document.getElementById('stat-tva10')) document.getElementById('stat-tva10').innerText = statsTva["10"].toFixed(2);
+if (document.getElementById('stat-tva5')) document.getElementById('stat-tva5').innerText = statsTva["5.5"].toFixed(2);
+if (document.getElementById('totalTVA')) document.getElementById('totalTVA').innerText = totalTvaGlobal.toFixed(2);
+}
+
+// --- 4. ÉVÉNEMENTS ---
 function bindUI() {
-const fabAdd = document.getElementById('fab-add');
-const ocrModal = document.getElementById('ocr-modal');
-const ocrClose = document.getElementById('ocr-close');
-const ocrFile = document.getElementById('ocr-file');
-const btnCreate = document.getElementById('ocr-create');
+const form = document.getElementById('f');
+const fileInput = document.getElementById('i');
 
-if (fabAdd) {
-fabAdd.onclick = () => { ocrModal.style.display = 'flex'; };
-}
-
-if (ocrClose) {
-ocrClose.onclick = () => {
-ocrModal.style.display = 'none';
-stopCamera();
-};
-}
-
-if (ocrFile) {
-ocrFile.onchange = async (e) => {
+if (fileInput) {
+fileInput.onchange = async (e) => {
 const file = e.target.files[0];
 if (!file) return;
 const result = await runOCR(file);
-fillOCRFields(result);
+if (result.total) document.getElementById('m').value = result.total;
+if (result.date) document.getElementById('d').value = result.date;
 };
 }
 
-if (btnCreate) {
-btnCreate.onclick = () => {
-const data = {
-magasin: document.getElementById('ocr-magasin').textContent.replace('—', '').trim(),
-total: document.getElementById('ocr-total').textContent.replace('€', '').trim(),
-date: document.getElementById('ocr-date').textContent.replace('—', '').trim(),
-paiement: document.getElementById('ocr-paiement').textContent.replace('—', '').trim()
-};
+if (form) {
+form.onsubmit = (e) => {
+e.preventDefault();
 
 }
 }
 
-function fillOCRFields(data) {
-if (data.total) document.getElementById('ocr-total').textContent = data.total + " €";
-if (data.date) document.getElementById('ocr-date').textContent = data.date;
-if (data.magasin) document.getElementById('ocr-magasin').textContent = data.magasin;
-if (data.paiement) document.getElementById('ocr-paiement').textContent = data.paiement;
-}
-
-function renderUI() {
-const app = document.getElementById('app');
-if (!app) return;
-
-if (DB.length === 0) {
-app.innerHTML = '<div class="empty">Aucune dépense. Appuyez sur ＋ pour commencer.</div>';
-return;
-}
-
-app.innerHTML = DB.sort((a,b) => b.id - a.id).map(exp => <div class="card fade-in" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:15px;"> <div> <strong>${exp.magasin}</strong><br> <small>${exp.date} • ${exp.paiement}</small> </div> <div style="text-align:right"> <div style="font-weight:bold; color:#4361ee; font-size:1.2em;">${exp.amount.toFixed(2)} €</div> <button onclick="window.deleteExpenseUI(${exp.id})" style="color:#e63946; background:none; border:none; cursor:pointer; font-size:0.8em;">Supprimer</button> </div> </div>).join('');
-}
-
-window.deleteExpenseUI = (id) => {
-if(confirm("Supprimer cette dépense ?")) {
-deleteExpense(id);
+// Suppression globale
+window.deleteExpense = (id) => {
+if(confirm('Supprimer cette dépense ?')) {
+DB = DB.filter(x => x.id !== id);
+dbSave();
 }
 };
 
-// --- CAMÉRA ---
-let stream = null;
-async function startCamera() {
-const video = document.getElementById('ocr-camera');
-try {
-stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-video.srcObject = stream;
-video.style.display = 'block';
-} catch (err) {
-alert("Accès caméra refusé");
-}
-}
-
-function stopCamera() {
-if (stream) {
-stream.getTracks().forEach(t => t.stop());
-stream = null;
-}
-}
-
-const camBtn = document.getElementById('ocr-camera-start');
-if(camBtn) camBtn.onclick = startCamera;
-
-// --- INITIALISATION ---
+// Initialisation
 dbLoad();
-window.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
 bindUI();
 renderUI();
 });
