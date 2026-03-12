@@ -1,11 +1,13 @@
-// FinanceFlow – Moteur principal
-// Ce fichier gère : le stockage local, l'OCR (lecture de ticket) et l'affichage des cartes.
+// FinanceFlow – Moteur principal (Version Finale)
+// Gère le stockage, l'OCR, l'affichage et les exports.
 
-// --- 1. GESTION DES DONNÉES ---
+/***********************
+
+GESTION DES DONNÉES
+***********************/
 let DB = [];
-const DB_KEY = 'frais_v5'; // Utilisation de la même clé que votre fichier HTML pour la compatibilité.
+const DB_KEY = 'frais_v5'; // Même clé que dans l'index pour conserver vos données
 
-// Charge les données au démarrage
 function dbLoad() {
 try {
 DB = JSON.parse(localStorage.getItem(DB_KEY)) || [];
@@ -14,13 +16,15 @@ DB = [];
 }
 }
 
-// Sauvegarde et rafraîchit l'interface
 function dbSave() {
 localStorage.setItem(DB_KEY, JSON.stringify(DB));
-renderUI();
+renderUI(); // Met à jour l'écran après chaque changement
 }
 
-// --- 2. MODULE OCR (Lecture du ticket) ---
+/***********************
+
+MODULE OCR (Analyse de ticket)
+***********************/
 async function runOCR(file) {
 const progressBar = document.getElementById('progress-bar');
 const statusDiv = document.getElementById('ocr-status');
@@ -28,7 +32,6 @@ const statusPerc = document.getElementById('ocr-perc');
 
 if (statusDiv) statusDiv.style.display = 'block';
 
-// Utilisation de Tesseract.js pour extraire le texte de l'image.
 return Tesseract.recognize(file, 'fra', {
 logger: m => {
 if (m.status === 'recognizing text' && progressBar) {
@@ -44,7 +47,10 @@ const result = { total: null, date: null };
 });
 }
 
-// --- 3. RENDU DE L'INTERFACE (Cartes de dépenses) ---
+/***********************
+
+RENDU DE L'INTERFACE (UI)
+***********************/
 function renderUI() {
 const listContainer = document.getElementById('l');
 const searchInput = document.getElementById('recherche');
@@ -57,7 +63,7 @@ let statsTva = { "20": 0, "10": 0, "5.5": 0, "2.1": 0 };
 
 listContainer.innerHTML = '';
 
-// Filtre et tri par date.
+// Filtrage et tri (le plus récent en haut)
 const filtered = DB.filter(x =>
 (x.ct || '').toLowerCase().includes(query) ||
 (x.nt || '').toLowerCase().includes(query)
@@ -69,7 +75,7 @@ let tvaHtml = '';
 
 });
 
-// Mise à jour des totaux dans le header.
+// Mise à jour des compteurs du Header
 if (document.getElementById('totalTTC')) document.getElementById('totalTTC').innerText = totalTtc.toFixed(2) + ' €';
 if (document.getElementById('stat-tva20')) document.getElementById('stat-tva20').innerText = statsTva["20"].toFixed(2);
 if (document.getElementById('stat-tva10')) document.getElementById('stat-tva10').innerText = statsTva["10"].toFixed(2);
@@ -77,7 +83,10 @@ if (document.getElementById('stat-tva5')) document.getElementById('stat-tva5').i
 if (document.getElementById('totalTVA')) document.getElementById('totalTVA').innerText = totalTvaGlobal.toFixed(2);
 }
 
-// --- 4. ÉVÉNEMENTS ---
+/***********************
+
+ACTIONS & LISTENERS
+***********************/
 function bindUI() {
 const form = document.getElementById('f');
 const fileInput = document.getElementById('i');
@@ -99,7 +108,7 @@ e.preventDefault();
 }
 }
 
-// Suppression globale
+// Global pour le bouton supprimer
 window.deleteExpense = (id) => {
 if(confirm('Supprimer cette dépense ?')) {
 DB = DB.filter(x => x.id !== id);
@@ -107,7 +116,7 @@ dbSave();
 }
 };
 
-// Initialisation
+// Initialisation au chargement
 dbLoad();
 document.addEventListener('DOMContentLoaded', () => {
 bindUI();
